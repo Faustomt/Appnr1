@@ -49,11 +49,11 @@ let simulacoesBd = [];
 
 const supabaseUrl = 'https://iuxzpehrmpslhkolwzmt.supabase.co';
 const supabaseKey = 'sb_publishable_nOXpr16pZwm4nBlvZ2LLuA_lxBp0rXw';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const db = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 async function loadData() {
     // 1. Carrega Organogramas do Supabase
-    const { data: hData, error: hErr } = await supabase.from('hierarquias').select('*');
+    const { data: hData, error: hErr } = await db.from('hierarquias').select('*');
     if(hData && hData.length > 0) {
         hierarquias = hData;
     } else {
@@ -64,7 +64,7 @@ async function loadData() {
     }
 
     // 2. Carrega as Respostas Anônimas do Supabase
-    const { data: sData, error: sErr } = await supabase.from('responses').select('*');
+    const { data: sData, error: sErr } = await db.from('responses').select('*');
     if(sData) {
         simulacoesBd = sData.map(d => ({
             demographics: { empresa: d.empresa, unidade_negocio: d.unidade_negocio, setor: d.setor },
@@ -158,7 +158,7 @@ document.getElementById('form-add-route').addEventListener('submit', async (e) =
     };
     
     // Inserção Nuvem
-    const { data, error } = await supabase.from('hierarquias').insert([novaTrilha]).select();
+    const { data, error } = await db.from('hierarquias').insert([novaTrilha]).select();
     if(!error && data) {
         hierarquias.push(data[0]); // Puxa com o UUID oficial gerado
         e.target.reset();
@@ -189,7 +189,7 @@ function renderAdminTable() {
 window.deleteRoute = async function(index) {
     const tr = hierarquias[index];
     if(tr.id) {
-        await supabase.from('hierarquias').delete().eq('id', tr.id);
+        await db.from('hierarquias').delete().eq('id', tr.id);
     }
     hierarquias.splice(index, 1);
     renderAdminTable();
@@ -305,11 +305,23 @@ document.getElementById('form-questions').addEventListener('submit', async (e) =
         divisao: selDiv.value,
         departamento: selDep.value,
         setor: selSet.value,
+        funcao: document.getElementById('funcao').value,
+        idade: document.getElementById('idade').value,
+        is_pcd: document.getElementById('is_pcd').value,
+        pcd_desc: document.getElementById('pcd_desc').value,
+        sexo: document.getElementById('sexo').value,
+        estado_civil: document.getElementById('estado_civil').value,
+        filhos: document.getElementById('filhos').value,
+        escolaridade: document.getElementById('escolaridade').value,
+        tempo_empresa: document.getElementById('tempo_empresa').value,
+        habito_beber: document.getElementById('habito_beber').value,
+        habito_fumar: document.getElementById('habito_fumar').value,
+        enps: parseInt(document.getElementById('enps').value) || null,
         percentual_risco: calcPerc
     };
 
     // Salvar na Nuvem
-    const { error } = await supabase.from('responses').insert([payload]);
+    const { error } = await db.from('responses').insert([payload]);
 
     if(!error) {
         simulacoesBd.push({
