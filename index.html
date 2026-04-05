@@ -71,7 +71,7 @@
         <h2>Percepção Individual</h2>
         <div class="alert-box"><i data-lucide="lock" style="width: 20px; height: 20px;"></i><p><strong>Confidencialidade Garantida:</strong> Suas respostas são anônimas e seguras e não vinculam seu nome.</p></div>
         <p class="subtitle">1 - Nunca | 2 - Raramente | 3 - Às vezes | 4 - Frequentemente | 5 - Sempre</p>
-        <form id="form-questions">
+        <form id="form-questions" novalidate>
           <div id="questions-container"></div>
           <div class="form-actions"><button type="submit" class="btn-primary">Enviar Avaliação</button></div>
         </form>
@@ -129,6 +129,24 @@
       </div>
       <div class="chart-container"><canvas id="riskChart"></canvas></div>
     </section>
+
+    <!-- MODAL DE DETALHAMENTO (DRILL-DOWN) -->
+    <div id="drill-down-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header" style="flex-wrap: wrap; position: relative;">
+          <h2 id="drill-down-title" style="width: 100%;">Detalhamento das Respostas</h2>
+          <div id="drill-down-summary" class="drill-summary" style="display: flex; width: 100%; gap: 1rem; margin-top: 1rem;">
+             <!-- Inject by JS -->
+          </div>
+          <button id="btn-close-modal" class="btn-close" style="position: absolute; top: 1.5rem; right: 1.5rem;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body" style="overflow-y: auto; max-height: calc(90vh - 140px);">
+          <div style="min-height: 2500px;">
+            <canvas id="drillDownChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </main>
   <script src="app.js"></script>

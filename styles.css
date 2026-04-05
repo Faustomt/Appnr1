@@ -97,3 +97,43 @@ select:disabled { background-color: #E2E8F0; cursor: not-allowed; color: #94A3B8
 .likert-option input[type="radio"] { display: none; }
 .likert-option input[type="radio"]:checked + label { background: var(--safety-blue); color: var(--white); border-color: var(--safety-blue); transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2); }
 .success-icon { text-align: center; margin-bottom: 1rem; }
+
+/* DRILL DOWN MODAL */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s ease;
+}
+.modal-overlay.active {
+  opacity: 1; pointer-events: auto;
+}
+.modal-content {
+  background: white; border-radius: 12px;
+  width: 95%; max-width: 1200px;
+  max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+.modal-header {
+  padding: 1.5rem; border-bottom: 1px solid #E2E8F0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h2 { margin: 0; font-size: 1.25rem; color: #1E293B; font-weight: 700; }
+.btn-close {
+  background: #F1F5F9; border: none; cursor: pointer; color: #64748B;
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%; transition: 0.2s;
+}
+.btn-close:hover { color: #EF4444; background: #FEE2E2; }
+.modal-body {
+  padding: 1.5rem; flex: 1;
+}
+
+/* SUMARIO DRILL DOWN */
+.drill-summary-box { flex: 1; text-align: center; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; color: white; display:flex; flex-direction:column; justify-content:center; }
+.ds-1 { background: #10B981; }
+.ds-2 { background: #4ADE80; color: #064E3B; }
+.ds-3 { background: #FACC15; color: #713F12; }
+.ds-4 { background: #F97316; }
+.ds-5 { background: #EF4444; }
+.ds-title { display: block; font-size: 0.75rem; opacity: 0.9; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.5px;}

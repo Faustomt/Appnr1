@@ -68,7 +68,8 @@ async function loadData() {
     if(sData) {
         simulacoesBd = sData.map(d => ({
             demographics: { empresa: d.empresa, unidade_negocio: d.unidade_negocio, setor: d.setor },
-            percentualRisco: parseFloat(d.percentual_risco)
+            percentualRisco: parseFloat(d.percentual_risco),
+            respostas_raw: d.respostas_raw
         }));
     }
 
@@ -292,10 +293,25 @@ document.getElementById('form-questions').addEventListener('submit', async (e) =
     btnSubmit.innerText = 'Transmitindo Seguro...'; btnSubmit.disabled = true;
 
     let totalScore = 0;
-    questions.forEach((_, index) => {
-        const val = parseInt(document.querySelector(`input[name="q${index+1}"]:checked`).value);
-        totalScore += (val - 1) * 25; 
-    });
+    const respostas_raw = [];
+    let hasError = false;
+
+    for (let index = 0; index < questions.length; index++) {
+        const checked = document.querySelector(`input[name="q${index+1}"]:checked`);
+        if (!checked) {
+            alert(`Por favor, responda a pergunta número ${index+1} antes de enviar.`);
+            hasError = true;
+            break;
+        }
+        const val = parseInt(checked.value);
+        totalScore += val * 20; 
+        respostas_raw.push(val);
+    }
+
+    if (hasError) {
+        btnSubmit.innerText = oldText; btnSubmit.disabled = false;
+        return;
+    }
     
     const calcPerc = totalScore / questions.length;
     
@@ -317,7 +333,8 @@ document.getElementById('form-questions').addEventListener('submit', async (e) =
         habito_beber: document.getElementById('habito_beber').value,
         habito_fumar: document.getElementById('habito_fumar').value,
         enps: parseInt(document.getElementById('enps').value) || null,
-        percentual_risco: calcPerc
+        percentual_risco: calcPerc,
+        respostas_raw: respostas_raw
     };
 
     // Salvar na Nuvem
@@ -326,7 +343,8 @@ document.getElementById('form-questions').addEventListener('submit', async (e) =
     if(!error) {
         simulacoesBd.push({
             demographics: { empresa: payload.empresa, unidade_negocio: payload.unidade_negocio, setor: payload.setor },
-            percentualRisco: calcPerc
+            percentualRisco: calcPerc,
+            respostas_raw: respostas_raw
         });
         document.getElementById('questions-step').classList.remove('active');
         document.getElementById('thanks-step').classList.add('active');
@@ -428,7 +446,94 @@ function renderDashboard() {
   chartInstance = new Chart(ctx, { 
     type: 'bar', 
     data: { labels, datasets: [{ label: title, data, backgroundColor: bgColors, borderRadius: 4 }] }, 
-    options: { scales: { y: { beginAtZero: true, max: 100 } } },
+    options: { 
+      scales: { y: { beginAtZero: true, max: 100 } },
+      onClick: (e, activeElements) => {
+        if(activeElements.length > 0) {
+          const idx = activeElements[0].index;
+          openDrillDown(labels[idx], groupKey);
+        }
+      }
+    },
     plugins: [goalLinePlugin]
   });
 }
+
+// ----------------------------------------------------
+// DRILL DOWN MODAL
+// ----------------------------------------------------
+let drillDownChartInstance = null;
+
+function openDrillDown(labelValue, groupKey) {
+   const filteredData = getFilteredData().filter(item => item.demographics[groupKey] === labelValue || (!item.demographics[groupKey] && labelValue === 'Não Definido'));
+   const validData = filteredData.filter(i => i.respostas_raw && i.respostas_raw.length === questions.length);
+   
+   if(validData.length === 0) {
+       alert("Não há questionários mais recentes com respostas individuais gravadas para " + labelValue + ". Preencha um teste novo para analisar.");
+       return;
+   }
+   
+   const avgPerQuestion = Array.from({length: questions.length}, () => ({ sum: 0, count: 0 }));
+   validData.forEach(item => {
+       item.respostas_raw.forEach((answer, qIdx) => {
+           avgPerQuestion[qIdx].sum += answer * 20;
+           avgPerQuestion[qIdx].count++;
+       });
+   });
+
+   const averages = avgPerQuestion.map(q => q.count > 0 ? (q.sum / q.count) : 0);
+   let counts = [0, 0, 0, 0, 0];
+   const data1=[], data2=[], data3=[], data4=[], data5=[];
+
+   averages.forEach(avg => {
+       if(avg <= 20) counts[0]++; else if(avg <= 40) counts[1]++; else if(avg <= 60) counts[2]++; else if(avg <= 80) counts[3]++; else counts[4]++;
+       data1.push(Math.min(avg, 20));
+       data2.push(Math.max(0, Math.min(avg - 20, 20)));
+       data3.push(Math.max(0, Math.min(avg - 40, 20)));
+       data4.push(Math.max(0, Math.min(avg - 60, 20)));
+       data5.push(Math.max(0, Math.min(avg - 80, 20)));
+   });
+
+   const labelWrap = text => { const arr = text.match(/.{1,70}(\s|$)/g) || [text]; return arr.map(s => s.trim()); };
+   const labels = questions.map((q, i) => [`Q${i+1}:`] .concat(labelWrap(q.text)));
+
+   const totalQ = questions.length;
+   document.getElementById('drill-down-summary').innerHTML = `
+      <div class="drill-summary-box ds-1"><span class="ds-title">Irrelevante (0-20%)</span>${counts[0]} perg. (${((counts[0]/totalQ)*100).toFixed(0)}%)</div>
+      <div class="drill-summary-box ds-2"><span class="ds-title">Baixo (20-40%)</span>${counts[1]} perg. (${((counts[1]/totalQ)*100).toFixed(0)}%)</div>
+      <div class="drill-summary-box ds-3"><span class="ds-title">Moderado (40-60%)</span>${counts[2]} perg. (${((counts[2]/totalQ)*100).toFixed(0)}%)</div>
+      <div class="drill-summary-box ds-4"><span class="ds-title">Alto (60-80%)</span>${counts[3]} perg. (${((counts[3]/totalQ)*100).toFixed(0)}%)</div>
+      <div class="drill-summary-box ds-5"><span class="ds-title">Grave (80-100%)</span>${counts[4]} perg. (${((counts[4]/totalQ)*100).toFixed(0)}%)</div>
+   `;
+
+   document.getElementById('drill-down-title').innerText = `Gestão de Risco: ${labelValue} (${validData.length} avaliações processadas no detalhe)`;
+   document.getElementById('drill-down-modal').classList.add('active');
+   const ctx = document.getElementById('drillDownChart').getContext('2d');
+   if(drillDownChartInstance) drillDownChartInstance.destroy();
+   
+   drillDownChartInstance = new Chart(ctx, {
+       type: 'bar',
+       data: {
+           labels: labels,
+           datasets: [
+               { label: 'Risco até 20%', data: data1, backgroundColor: '#10B981' },
+               { label: 'Risco até 40%', data: data2, backgroundColor: '#4ADE80' },
+               { label: 'Risco até 60%', data: data3, backgroundColor: '#FACC15' },
+               { label: 'Risco até 80%', data: data4, backgroundColor: '#F97316' },
+               { label: 'Risco até 100%', data: data5, backgroundColor: '#EF4444' }
+           ]
+       },
+       options: {
+           indexAxis: 'y',
+           scales: { x: { stacked: true, max: 100 }, y: { stacked: true, ticks: { font: { size: 10 } } } },
+           maintainAspectRatio: false,
+           plugins: {
+               tooltip: { callbacks: { label: function() { return ''; }, afterLabel: function(ctx) { return "Média: " + averages[ctx.dataIndex].toFixed(1) + "%"; } } }
+           }
+       }
+   });
+}
+
+document.getElementById('btn-close-modal').addEventListener('click', () => {
+    document.getElementById('drill-down-modal').classList.remove('active');
+});
