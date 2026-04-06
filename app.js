@@ -483,15 +483,16 @@ function openDrillDown(labelValue, groupKey) {
 
    const averages = avgPerQuestion.map(q => q.count > 0 ? (q.sum / q.count) : 0);
    let counts = [0, 0, 0, 0, 0];
-   const data1=[], data2=[], data3=[], data4=[], data5=[];
+   const chartData = [];
+   const bgColors = [];
 
    averages.forEach(avg => {
-       if(avg <= 20) counts[0]++; else if(avg <= 40) counts[1]++; else if(avg <= 60) counts[2]++; else if(avg <= 80) counts[3]++; else counts[4]++;
-       data1.push(Math.min(avg, 20));
-       data2.push(Math.max(0, Math.min(avg - 20, 20)));
-       data3.push(Math.max(0, Math.min(avg - 40, 20)));
-       data4.push(Math.max(0, Math.min(avg - 60, 20)));
-       data5.push(Math.max(0, Math.min(avg - 80, 20)));
+       if(avg <= 20) { counts[0]++; bgColors.push('#10B981'); }
+       else if(avg <= 40) { counts[1]++; bgColors.push('#4ADE80'); }
+       else if(avg <= 60) { counts[2]++; bgColors.push('#FACC15'); }
+       else if(avg <= 80) { counts[3]++; bgColors.push('#F97316'); }
+       else { counts[4]++; bgColors.push('#EF4444'); }
+       chartData.push(avg);
    });
 
    const labelWrap = text => { const arr = text.match(/.{1,70}(\s|$)/g) || [text]; return arr.map(s => s.trim()); };
@@ -516,16 +517,12 @@ function openDrillDown(labelValue, groupKey) {
        data: {
            labels: labels,
            datasets: [
-               { label: 'Risco até 20%', data: data1, backgroundColor: '#10B981' },
-               { label: 'Risco até 40%', data: data2, backgroundColor: '#4ADE80' },
-               { label: 'Risco até 60%', data: data3, backgroundColor: '#FACC15' },
-               { label: 'Risco até 80%', data: data4, backgroundColor: '#F97316' },
-               { label: 'Risco até 100%', data: data5, backgroundColor: '#EF4444' }
+               { label: 'Risco Médio da Pergunta', data: chartData, backgroundColor: bgColors }
            ]
        },
        options: {
            indexAxis: 'y',
-           scales: { x: { stacked: true, max: 100 }, y: { stacked: true, ticks: { font: { size: 10 } } } },
+           scales: { x: { max: 100 }, y: { ticks: { font: { size: 10 } } } },
            maintainAspectRatio: false,
            plugins: {
                tooltip: { callbacks: { label: function() { return ''; }, afterLabel: function(ctx) { return "Média: " + averages[ctx.dataIndex].toFixed(1) + "%"; } } }
